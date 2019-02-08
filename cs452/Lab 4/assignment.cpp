@@ -4,16 +4,21 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <string>
 #include <iostream>
-#define TRUE 1
-#define FALSE 0
 
-using namespace std;
+using namespace std; // not safe, but I'm lazy right now
 
+/* method the thread will execute */
 void *retrieve_file(void *arg);
 
-int serving = TRUE;
+/* signal handler for when ^C is passed */
+void sig_handler(int);
+
+/* global variables for exiting server and counting requests */
+int serving = true;
+int total_num_requests;
 
 int main()
 {
@@ -26,6 +31,7 @@ int main()
   // infinite loop that will exit when ^C is passed.
   while(serving)
   {
+    signal(SIGINT, sig_handler);
     cout << "filename to access: ";
     getline(cin, file);
     
@@ -52,7 +58,7 @@ int main()
 void *retrieve_file(void *arg)
 {
   string *filename = (string *)arg;
-
+  total_num_requests++;
   // there is an 80% chance to sleep for 1 second,
   // 20% chance to sleep for 7-10 seconds
   int time_key = (rand() % 10) + 1;
@@ -67,3 +73,15 @@ void *retrieve_file(void *arg)
   return NULL;
 }
 
+
+void sig_handler(int sigNum)
+{
+  // this catches the ^C interrupt
+  if (sigNum == SIGINT)
+  {
+    cout << "\nServicing report: " << total_num_requests << endl;
+    
+    // TODO fix this so the server actually exits the loop
+    serving = false;
+  }
+}
