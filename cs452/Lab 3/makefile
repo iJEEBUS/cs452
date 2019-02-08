@@ -4,7 +4,7 @@
 2:
 	gcc -Wall -g -o 2 2.c
 
-a:
+assignment:
 	gcc -Wall -g -o a assignment.c
 
 run1:
@@ -12,7 +12,7 @@ run1:
 
 run2:
 	./2
-x:
+run:
 	./a
 clean:
 	rm -rf 1 2 a
