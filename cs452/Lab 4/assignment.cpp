@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <string>
 #include <iostream>
+#include <fcntl.h>
 
 using namespace std; // not safe, but I'm lazy right now
 
@@ -18,40 +19,58 @@ void sig_handler(int);
 
 /* global variables for exiting server and counting requests */
 int serving = true;
+
+/* counter for number of requests received */
 int total_num_requests;
+
+/* counter for number of threads that are currently spawned */
+int num_threads = 0;
 
 int main()
 {
+  /* set the stdin to be blocking */
+  int saved_flags = fcntl(0, F_GETFL, 0);
+  saved_flags &= ~O_NONBLOCK;
+  fcntl(0, F_SETFL, saved_flags);
+  
+  /* status of the thread spawned */
+  int status; 
+  /* the actual thread */
   pthread_t thread;
-  void *thread_result;
-  int status;
-
+  /* file name entered by user */
   string file;
+  /* temp file location that is sent to the thread */
+  string temp_file;
+  /* buffer that can handle 100 threads */
+  string file_buffer[100]; 
+  /* counter of files that have been processed */
+  int file_count = 0;
 
-  // infinite loop that will exit when ^C is passed.
+  // parent thread that handles incoming requests
+  // exits when ^C is passed.
   while(serving)
   {
     signal(SIGINT, sig_handler);
     cout << "filename to access: ";
     getline(cin, file);
+    file_buffer[file_count] = file;
     
-    // create and start the thread to search for the filename
-    // entered by the user
-    if ((status = pthread_create(&thread, NULL, retrieve_file, &file)) != 0) 
+    // create and execute retrieve_file function in its own thread 
+    if ((status = pthread_create(&thread, NULL, retrieve_file, &file_buffer[file_count])) != 0) 
     {
       fprintf(stderr, "thread creation error %d: %s\n", status, strerror(status));
       exit(1);
     }
 
-    // wait for the thread to terminate and then
-    // get its return value
-    if ((status = pthread_join(thread, &thread_result)) != 0)
+    // used to track file buffer index 
+    file_count++;
+    if (file_count == 100)
     {
-      fprintf(stderr, "join error %d: %s\n", status, strerror(status));
-      exit(1);
+      file_count = 0;
     }
   }
-
+  // make sure stdin is set to blocking
+  fcntl(0, F_SETFL, saved_flags);
   return 0;
 }
 
@@ -69,7 +88,8 @@ void *retrieve_file(void *arg)
     int time_to_sleep = (rand() % 3) + 7;	    
     sleep(time_to_sleep);
   } 
-  cout << "File accessed: " << *filename << endl;
+  cout << "\nFile accessed: " << *filename << endl;
+  num_threads--;
   return NULL;
 }
 
@@ -79,9 +99,12 @@ void sig_handler(int sigNum)
   // this catches the ^C interrupt
   if (sigNum == SIGINT)
   {
-    cout << "\nServicing report: " << total_num_requests << endl;
-    
-    // TODO fix this so the server actually exits the loop
+    cout << "\nNumber of requests served: " << total_num_requests << endl;
+    // breaks out of loop for parent thread
     serving = false;
+    int saved_flags = fcntl(0, F_GETFL, 0);
+    saved_flags |= O_NONBLOCK;
+    // set the stdin to non-blocking
+    fcntl(0, F_SETFL, saved_flags);
   }
 }
