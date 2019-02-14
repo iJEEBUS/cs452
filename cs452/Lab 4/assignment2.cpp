@@ -8,7 +8,6 @@
 #include <string>
 #include <iostream>
 #include <fcntl.h>
-#include <mutex>
 
 using namespace std; // not safe, but I'm lazy right now
 
@@ -22,19 +21,10 @@ void sig_handler(int);
 int serving = true;
 
 /* counter for number of requests received */
-int total_num_requests = 0;
+int total_num_requests;
 
 /* counter for number of threads that are currently spawned */
 int num_threads = 0;
-
-/* total execution time of threads */
-double total_thread_time;
-
-/* avg execution time of threads */
-double avg_thread_time;
-
-/* mutual exclusion for timing threads */
-mutex m;
 
 int main()
 {
@@ -56,13 +46,12 @@ int main()
   /* counter of files that have been processed */
   int file_count = 0;
 
-
   // parent thread that handles incoming requests
   // exits when ^C is passed.
   while(serving)
   {
     signal(SIGINT, sig_handler);
-    cout << "\nfilename to access: ";
+    cout << "filename to access: ";
     getline(cin, file);
     file_buffer[file_count] = file;
     
@@ -87,30 +76,20 @@ int main()
 
 void *retrieve_file(void *arg)
 {
-  srand(time(0));
   string *filename = (string *)arg;
   total_num_requests++;
   // there is an 80% chance to sleep for 1 second,
   // 20% chance to sleep for 7-10 seconds
   int time_key = (rand() % 10) + 1;
-   
-  time_t start = time(0);
   if (time_key <= 8)
   {
     sleep(1);
   } else {
     int time_to_sleep = (rand() % 3) + 7;	    
     sleep(time_to_sleep);
-  }
-  time_t end = time(0);
-
-  // lock code when modifying shared variables
-  m.lock();
-  total_thread_time += difftime(end, start);
+  } 
   cout << "\nFile accessed: " << *filename << endl;
   num_threads--;
-  m.unlock();
-  
   return NULL;
 }
 
@@ -120,12 +99,7 @@ void sig_handler(int sigNum)
   // this catches the ^C interrupt
   if (sigNum == SIGINT)
   {
-    // calculate avg thread time
-    avg_thread_time = total_thread_time / (double) total_num_requests;
-
     cout << "\nNumber of requests served: " << total_num_requests << endl;
-    cout << "Total file access time: " << total_thread_time << " seconds" << endl;
-    cout << "Average file access time: " << avg_thread_time << " seconds" << endl; 
     // breaks out of loop for parent thread
     serving = false;
     int saved_flags = fcntl(0, F_GETFL, 0);
