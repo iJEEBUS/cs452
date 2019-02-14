@@ -1,3 +1,16 @@
+/*************************************************************************
+ * Lab 4 - Multi-threading
+ *
+ * This program will accept a user input (a filename) and spawn a thread
+ * that will simulate a file lookup.
+ *
+ * As per directions, the total number of requests serviced are reported
+ * as well as the average file lookup times that occur on all threads.
+ *
+ *
+ * @author Ron Rounsifer
+ * @version 0.05
+ *************************************************************************/
 #include <pthread.h>
 #include <stdio.h>
 #include <errno.h>
@@ -11,7 +24,7 @@
 #include <mutex>
 #define MAX 1000
 
-using namespace std; // not safe, but I'm lazy right now
+using namespace std; // not safe, but it's just a lab
 
 /* method the thread will execute */
 void *retrieve_file(void *arg);
@@ -37,6 +50,10 @@ double avg_thread_time;
 /* mutual exclusion for timing threads */
 mutex m;
 
+
+/*************************************************************************
+ * Main entry point of program.
+ *************************************************************************/
 int main()
 {
   void *result;
@@ -103,6 +120,13 @@ int main()
   return 0;
 }
 
+
+/*************************************************************************
+ * Function ran when a thread is spawned.
+ * Simulates a file lookup.
+ *
+ * @params void* - list of arguments thread needs
+ *************************************************************************/
 void *retrieve_file(void *arg)
 {
   srand(time(0));
@@ -133,6 +157,19 @@ void *retrieve_file(void *arg)
 }
 
 
+/*************************************************************************
+ * Used to catch the interrupt signal (^C) send by the user.
+ * 
+ * Reports the total number of requests, total thread time, and average 
+ * thread time.
+ * 
+ * Changes the parents running status to false.
+ *
+ * Sets the stdin to be non-blocking (so you do not need to enter newline
+ * to actually exit parents loop, due to readline())
+ *
+ * @params int - the interrupt signal number
+ *************************************************************************/
 void sig_handler(int sigNum)
 {
   // this catches the ^C interrupt
