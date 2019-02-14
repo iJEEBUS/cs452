@@ -9,6 +9,7 @@
 #include <iostream>
 #include <fcntl.h>
 #include <mutex>
+#define MAX 1000
 
 using namespace std; // not safe, but I'm lazy right now
 
@@ -38,6 +39,8 @@ mutex m;
 
 int main()
 {
+  void *result;
+
   /* set the stdin to be blocking */
   int saved_flags = fcntl(0, F_GETFL, 0);
   saved_flags &= ~O_NONBLOCK;
@@ -47,15 +50,16 @@ int main()
   int status; 
   /* the actual thread */
   pthread_t thread;
+  /* all threads */
+  pthread_t all_threads[MAX];
   /* file name entered by user */
   string file;
   /* temp file location that is sent to the thread */
   string temp_file;
-  /* buffer that can handle 100 threads */
-  string file_buffer[100]; 
+  /* buffer that can handle 1000 threads */
+  string file_buffer[MAX]; 
   /* counter of files that have been processed */
   int file_count = 0;
-
 
   // parent thread that handles incoming requests
   // exits when ^C is passed.
@@ -65,20 +69,34 @@ int main()
     cout << "\nfilename to access: ";
     getline(cin, file);
     file_buffer[file_count] = file;
-    
-    // create and execute retrieve_file function in its own thread 
-    if ((status = pthread_create(&thread, NULL, retrieve_file, &file_buffer[file_count])) != 0) 
+    if (strlen(file.c_str()) > 0)
     {
-      fprintf(stderr, "thread creation error %d: %s\n", status, strerror(status));
-      exit(1);
-    }
+      // create and execute retrieve_file function in its own thread 
+      if ((status = pthread_create(&thread, NULL, retrieve_file, &file_buffer[file_count])) != 0) 
+      {
+        fprintf(stderr, "thread creation error %d: %s\n", status, strerror(status));
+        exit(1);
+      } else {
+        all_threads[file_count] = thread;
+      }
 
-    // used to track file buffer index 
-    file_count++;
-    if (file_count == 100)
-    {
-      file_count = 0;
-    }
+      // used to track file buffer index 
+      file_count++;
+      if (file_count == MAX)
+      {
+        file_count = 0;
+      }   
+    }  
+  }
+
+  // join all the threads
+  for (int i = 0; i < file_count; ++i)
+  {
+   if ((status = pthread_join(all_threads[i], &result)) != 0)
+   {
+     cerr << "join error: " << strerror(status) << endl;
+     exit(1);
+   } 
   }
   // make sure stdin is set to blocking
   fcntl(0, F_SETFL, saved_flags);
