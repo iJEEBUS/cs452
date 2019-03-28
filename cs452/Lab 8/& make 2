@@ -1,0 +1,39 @@
+#include <stdio.h>
+#include <stdbool.h>
+
+double big_one[500];
+double small_one[50];
+int global = 5235;
+printf("global: %x, %X, %p", global, global, &global);
+
+int main() {
+    bool test;
+
+    printf ("This main function begins at %p\n", main);
+    printf ("The two arrays are allocated at %p and %p\n", big_one,
+            small_one);
+    printf ("Test is at %p\n", test);
+
+
+
+
+    // playground
+    // Experiment with different types of variable (global, local, initialized, unitialized, arrays, pointers, structures, etc...)
+    int local = 555;
+    printf("local: %x, %X, %p", local, local, &local);
+
+    function_variable();
+
+
+
+    return 0;
+}
+
+
+void function_variable()
+{
+    int function = 2483;
+    printf("function: %x, %X, %p", function, function, &function);
+};
+
+
