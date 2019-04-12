@@ -1,6 +1,3 @@
-// lab10.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 /************************************************************************************************
 * Lab 10 - CIS 452
 *
@@ -8,7 +5,6 @@
 *
 * @author Ron Rounsifer
 ************************************************************************************************/
-//#include "pch.h"
 #include <Windows.h>
 #include <iostream>
 #include <stdlib.h>
@@ -42,15 +38,13 @@ int main()
 		break;
 	}
 
-
 	// Free memory
 	free(allocated_mem);
 	std::cout << "\nFreeing memory...\n" << std::endl;
 
-
-		// Query system after freeing memory
-		// Determine state of allocated memory
-		VirtualQuery(allocated_mem, &mem_info, sizeof(mem_info));
+	// Query system after freeing memory
+	// Determine state of allocated memory
+	VirtualQuery(allocated_mem, &mem_info, sizeof(mem_info));
 	switch (mem_info.State)
 	{
 	case MEM_COMMIT:
@@ -63,6 +57,5 @@ int main()
 		std::cout << "Memory state: Free. " << std::endl;
 		break;
 	}
-
 	return 0;
 }
